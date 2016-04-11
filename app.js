@@ -1,16 +1,31 @@
-//load the express package and create the app
 var express = require('express');
 var app = express();
 var path = require('path');
 var bodyParser = require('body-parser');
 var crypto = require('crypto');
+var unirest = require('unirest');
+var querystring = require('querystring');
+
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
-app.locals.key = 'jL86TAjopa';
+// start the server
+app.listen(1337);
+console.log('1337 is up and running, baby!');
+
+// GLOBAL VARIABLES
 var secret = 'iU44RWxeik';
 
-// sort fields in request
+
+// HELPERS
+// generates random value in hex format
+function randomValueHex (len) {
+    return crypto.randomBytes(Math.ceil(len/2))
+        .toString('hex') // convert to hexadecimal format
+        .slice(0,len);   // return required number of characters
+};
+
+// sorts fields in request object
 function sortObject(o) {
     var sorted = {},
     key, a = [];
@@ -26,19 +41,25 @@ function sortObject(o) {
     return sorted;
 };
 
+// join fields in request object
+function joinFields(fields) {
+  var new_fields = [];
+  for(var prop in fields) {
+	   new_fields.push(prop + fields[prop]);
+   }
+   var final_fields = new_fields.join('');
+   return final_fields;
+};
+
+
+
+// removes x_signature value from request object
 function removeSignature(obj) {
 	delete obj.x_signature;
   return obj;
 };
 
-// function removeSignature(obj) {
-// for ( var i in obj ) {
-//         if(!i.startsWith("x_")){
-//         ;
-//         console.log(fields);
-//     }
-// }}
-
+// creates fields object based on x_ properties
 function createFields(fields) {
   var newfields = {};
 
@@ -48,80 +69,86 @@ function createFields(fields) {
     	}
   }
   return newfields;
-
 };
 
-
-
-// join fields for signing mechanism
-function joinFields(fields) {
-  var new_fields = [];
-  for(var prop in fields) {
-	   new_fields.push(prop + fields[prop]);
-   }
-   var final_fields = new_fields.join('');
-   return final_fields;
-}
-
-// http://stackoverflow.com/questions/7530619/how-to-encrypt-a-string-using-node-js
+// string encryption
 function sign(fields,secret) {
   fields  = sortObject(fields)
   fields  = joinFields(fields)
+  console.log(fields)
   signature = crypto.createHmac("sha256", secret).update(fields).digest("hex");
   return signature;
 };
 
+// process payment
+function processPayment(req,res,secret,result) {
+  var timeOfTransaction = new Date(Date.now()).toISOString();
+  var payload = {
+    "x_account_id"        :req.body['x_account_id'],
+    "x_reference"         :req.body['x_reference'],
+    "x_currency"          :req.body['x_currency'],
+    "x_test"              :req.body['x_test'],
+    "x_amount"            :req.body['x_amount'],
+    "x_result"            :result, // completed, pending, failed
+    "x_gateway_reference" :randomValueHex(5),
+    "x_timestamp"         :timeOfTransaction
+  };
+  payload.x_signature = sign(payload,secret);
+  console.log(payload)
+  console.log(secret)
+  var redirect_url = req.body['x_url_complete'];
+  var callback_url = req.body['x_url_callback'];
+  unirest.post(callback_url)
+  .headers({'Accept': 'application/json', 'Content-Type': 'application/json'})
+  .send(payload)
+  .end(function(res) {
+    console.log(res.code
+  });
+  var queryString = '?' + querystring.stringify(payload);
+  res.redirect(redirect_url + queryString);
+};
 
 
-
-// send our index.html file to the user for the homepage
+// ROUTING
 app.get('/', function(req,res) {
   res.sendFile(path.join(__dirname + '/index.html'));
-  console.log(app.locals.key)
-});
-
-// post from Shopify checkout
-app.post('/', function(req,res) {
-  var provided_signature = req.body.x_signature;
-  console.log(provided_signature);
-  var finalfields = createFields(req.body);
-
-  var expected_signature = sign(removeSignature(finalfields),secret);
-  console.log(expected_signature);
 });
 
 app.get('/about', function(req,res) {
   res.sendFile(path.join(__dirname + '/about.html'));
 });
 
-// start the server
-app.listen(1337);
-console.log('1337 is up and running, baby!');
+// post from Shopify checkout
+app.post('/', function(req,res) {
+  var provided_signature = req.body.x_signature;
+  console.log(req.body)
+  var finalfields = createFields(req.body);
+  var expected_signature = sign(removeSignature(finalfields),secret);
 
-// create routes for the payments page
+  if (expected_signature == provided_signature) {
+    console.log("Signature's match.");
+  } else {
+    console.log("Signature's do not match.");
+  }
+  // process payment with status complete
+  processPayment(req,res,secret,"completed");
 
-//get an instance of the router
+
+});
+
+
+
 var adminRouter   = express.Router();
 var paymentRouter = express.Router();
 
 
-//route middleware that will happen on every request
+//route middleware
 adminRouter.use(function(req,res,next) {
-  // log each request to the console
   console.log(req.method, req.url);
-  // continue on and go to the route
   next();
 });
 
-//route middleware that will happen on every request
-paymentRouter.param('action', function(req,res,next,action) {
-  //do validation on payment type
-  // expected_signature = sign(fields.reject{|k,_| k == 'x_signature'})
-  console.log('Doing some validation on ' + action);
 
-
-  next();
-});
 
 
 app.route('/payment')
@@ -152,6 +179,14 @@ paymentRouter.get('/type/:action', function(req,res) {
 paymentRouter.get('/type', function(req,res) {
   res.send('hello');
 });
+
+paymentRouter.post('/type/:action', function(req,res) {
+
+});
+
+
+
+
 
 
 
