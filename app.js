@@ -11,13 +11,12 @@ app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
 // start the server
 app.listen(1337);
-console.log('1337 is up and running, baby!');
+console.log('1337 is up and running.');
 
-// GLOBAL VARIABLES
+// use the same secret as defined in your gateway settings under 'Password label'
 var secret = 'iU44RWxeik';
 
-
-// HELPERS
+// helper functions (soon to be replaced using underscore.js)
 // generates random value in hex format
 function randomValueHex (len) {
     return crypto.randomBytes(Math.ceil(len/2))
@@ -50,8 +49,6 @@ function joinFields(fields) {
    var final_fields = new_fields.join('');
    return final_fields;
 };
-
-
 
 // removes x_signature value from request object
 function removeSignature(obj) {
@@ -102,14 +99,13 @@ function processPayment(req,res,secret,result) {
   .headers({'Accept': 'application/json', 'Content-Type': 'application/json'})
   .send(payload)
   .end(function(res) {
-    console.log(res.code
+    console.log(res.code);
   });
   var queryString = '?' + querystring.stringify(payload);
   res.redirect(redirect_url + queryString);
 };
 
-
-// ROUTING
+// routing
 app.get('/', function(req,res) {
   res.sendFile(path.join(__dirname + '/index.html'));
 });
@@ -118,78 +114,35 @@ app.get('/about', function(req,res) {
   res.sendFile(path.join(__dirname + '/about.html'));
 });
 
-// post from Shopify checkout
-app.post('/', function(req,res) {
-  var provided_signature = req.body.x_signature;
-  console.log(req.body)
-  var finalfields = createFields(req.body);
-  var expected_signature = sign(removeSignature(finalfields),secret);
-
-  if (expected_signature == provided_signature) {
-    console.log("Signature's match.");
-  } else {
-    console.log("Signature's do not match.");
-  }
-  // process payment with status complete
-  processPayment(req,res,secret,"completed");
-
-
-});
-
-
-
-var adminRouter   = express.Router();
 var paymentRouter = express.Router();
 
-
-//route middleware
-adminRouter.use(function(req,res,next) {
+//route middleware logging
+paymentRouter.use(function(req,res,next) {
   console.log(req.method, req.url);
   next();
 });
 
-
-
-
+// post from Shopify checkout
 app.route('/payment')
-  // admin main page. the dashboard (http://localhost:1337/admin)
-  .get(function(req,res) {
-    res.send('I am the dashboard!');
-  })
-
-  // post reqeust
   .post(function(req,res) {
-    res.send('YES!');
-    console.log(req.body);
+    var provided_signature = req.body.x_signature;
+    console.log(req.body)
+    var finalfields = createFields(req.body);
+    var expected_signature = sign(removeSignature(finalfields),secret);
+
+    if (expected_signature == provided_signature) {
+      console.log("Signature's match.");
+    } else {
+      console.log("Signature's do not match.");
+    }
+    // process payment with status 'completed'
+    processPayment(req,res,secret,"completed");
   });
-
-// users page
-adminRouter.get('/users/', function(req,res) {
-  res.send('I show you all the users! like:');
-});
-
-
 
 // route with params (http://localhost:1337/payment/type/:name)
 paymentRouter.get('/type/:action', function(req,res) {
   res.send('hello ' + req.params.action);
 });
 
-// route with params (http://localhost:1337/payment/type/:name)
-paymentRouter.get('/type', function(req,res) {
-  res.send('hello');
-});
-
-paymentRouter.post('/type/:action', function(req,res) {
-
-});
-
-
-
-
-
-
-
 // apply the routes to our application
 app.use('/payment', paymentRouter);
-app.use('/admin', adminRouter);
