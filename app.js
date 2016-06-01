@@ -6,6 +6,8 @@ var crypto = require('crypto');
 var unirest = require('unirest');
 var querystring = require('querystring');
 
+app.set('view engine', 'jade');
+
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
@@ -107,7 +109,7 @@ function processPayment(req,res,secret,result) {
 
 // routing
 app.get('/', function(req,res) {
-  res.sendFile(path.join(__dirname + '/index.html'));
+  res.render('index', { key:secret});
 });
 
 app.get('/about', function(req,res) {
