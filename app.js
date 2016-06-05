@@ -19,8 +19,13 @@ console.log('1337 is up and running.');
 var secret = 'iU44RWxeik';
 
 // helper functions (soon to be replaced using underscore.js)
+
+function turnToString(req) {
+  return JSON.stringify(req.body);
+}
+
 // generates random value in hex format
-function randomValueHex (len) {
+function randomValueHex(len) {
     return crypto.randomBytes(Math.ceil(len/2))
         .toString('hex') // convert to hexadecimal format
         .slice(0,len);   // return required number of characters
@@ -63,7 +68,7 @@ function createFields(fields) {
   var newfields = {};
 
   for(var prop in fields) {
- 		if(prop.startsWith('x_')) {
+ 		if(prop.indexOf('x_') === 0) {
         newfields[prop] = fields[prop];
     	}
   }
@@ -113,7 +118,7 @@ app.get('/', function(req,res) {
 });
 
 app.get('/about', function(req,res) {
-  res.sendFile(path.join(__dirname + '/about.html'));
+  res.render('about')
 });
 
 var paymentRouter = express.Router();
@@ -127,8 +132,9 @@ paymentRouter.use(function(req,res,next) {
 // post from Shopify checkout
 app.route('/payment')
   .post(function(req,res) {
-    var provided_signature = req.body.x_signature;
+    res.render('index', {request: turnToString(req)});
     console.log(req.body)
+    var provided_signature = req.body.x_signature;
     var finalfields = createFields(req.body);
     var expected_signature = sign(removeSignature(finalfields),secret);
 
