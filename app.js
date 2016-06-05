@@ -103,7 +103,7 @@ function processPayment(req,res,secret,result) {
   var redirect_url = req.body['x_url_complete'];
   var callback_url = req.body['x_url_callback'];
   unirest.post(callback_url)
-  .headers({'Accept': 'application/json', 'Content-Type': 'application/json'})
+  .headers({'Accept': 'application/json'})
   .send(payload)
   .end(function(res) {
     console.log(res.code);
@@ -124,16 +124,16 @@ app.get('/about', function(req,res) {
 var paymentRouter = express.Router();
 
 //route middleware logging
-paymentRouter.use(function(req,res,next) {
-  console.log(req.method, req.url);
-  next();
-});
+// paymentRouter.use(function(req,res,next) {
+//   console.log(req.method, req.url);
+//   next();
+// });
 
 // post from Shopify checkout
 app.route('/payment')
   .post(function(req,res) {
-    res.render('index', {request: turnToString(req)});
-    console.log(req.body)
+    // res.render('index', {request: turnToString(req)});
+    // console.log(req.body)
     var provided_signature = req.body.x_signature;
     var finalfields = createFields(req.body);
     var expected_signature = sign(removeSignature(finalfields),secret);
