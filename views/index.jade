@@ -1,30 +1,46 @@
 extends ../node_modules/jade-bootstrap/_bootstrap
 append styles
-	//	!-- Custom styles for this template --
+  //  !-- Custom styles for this template --
 
 
 block body
-	.site-wrapper
-		.site-wrapper-inner
-			.cover-container
-				.masthead.clearfix
-					.inner
-						h3.masthead-brand Cover
-						nav
-							ul.nav.masthead-nav
-								li.active
-									a(href="#") Home
-								li
-									a(href="#") Install
-								li
-									a(href="#") Contact
-				.inner.cover
-					h1.cover-heading Hosted Payments SDK Simulator
-					p.lead This tool will allow you to simulate the redirects and callbacks needed to build an integration using the Hosted Payment SDK.
-					p.lead
-					a(href="#", class="btn btn-lg btn-default") Learn more
-					p= request
-
-				.mastfoot
-					.inner
-						p Simulator built by <a href="http://getbootstrap.com">Shopify</a>
+  .site-wrapper
+    .site-wrapper-inner
+      .cover-container
+        .masthead.clearfix
+          .inner
+            img.masthead-brand(id="complete",src="https://www.visii.com/img/shopify-logo.png",alt="Shopify logo" height="25%" width="25%",href="http://shopify.ca")
+            nav
+              ul.nav.masthead-nav
+                li.active
+                  a(href="#") Home
+                li
+                  a(href="#") Install
+                li
+                  a(href="#") Contact
+        .inner.cover
+          h1.cover-heading Hosted Payments SDK Simulator
+          p.lead This tool will allow you to simulate the redirects and callbacks needed to build an integration using the Hosted Payment SDK.
+          p.lead
+          a(href="#", class="btn btn-lg btn-default") Complete Payment
+          ul
+          each val, index in {1:'one',2:'two',3:'three'}
+            li= index + ': ' + val
+        .container
+          h2 Response Values
+          p To learn about the HPSDK expected response values, click here.
+          table.table
+            thead
+              tr
+                th Key
+                th Value
+            tbody
+            each val, index in request
+              tr
+                td= val
+                td= index
+        .mastfoot
+          .inner
+            p Simulator built by <a href="http://getbootstrap.com">Shopify</a>
+block scripts
+  script(src="fun.js")

@@ -10,10 +10,11 @@ app.set('view engine', 'jade');
 
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
+app.use(express.static(path.join(__dirname, 'public')));
 
 // start the server
-app.listen(1337);
-console.log('1337 is up and running.');
+app.listen(4567);
+console.log('4567 is up and running.');
 
 // use the same secret as defined in your gateway settings under 'Password label'
 var secret = 'iU44RWxeik';
@@ -84,6 +85,23 @@ function sign(fields,secret) {
   return signature;
 };
 
+// grab response values
+function showResponseValues(req,res,secret,result) {
+  var timeOfTransaction = new Date(Date.now()).toISOString();
+  var payload = {
+    "x_account_id"        :req.body['x_account_id'],
+    "x_reference"         :req.body['x_reference'],
+    "x_currency"          :req.body['x_currency'],
+    "x_test"              :req.body['x_test'],
+    "x_amount"            :req.body['x_amount'],
+    "x_result"            :result, // completed, pending, failed
+    "x_gateway_reference" :randomValueHex(5),
+    "x_timestamp"         :timeOfTransaction
+  };
+  payload.x_signature = sign(payload,secret);
+  return createFields(payload);
+}
+
 // process payment
 function processPayment(req,res,secret,result) {
   var timeOfTransaction = new Date(Date.now()).toISOString();
@@ -107,13 +125,14 @@ function processPayment(req,res,secret,result) {
   .send(payload)
   .end(function(res) {
     console.log(res.code);
-  });
+  })
+  // how the heck do I call the following code in the end() method body above - scoping issue?
   var queryString = '?' + querystring.stringify(payload);
-  res.redirect(redirect_url + queryString);
+  // res.redirect(redirect_url + queryString);
 };
 
 // routing
-app.get('/', function(req,res) {
+app.post('/', function(req,res) {
   res.render('index', { key:secret});
 });
 
@@ -132,8 +151,8 @@ var paymentRouter = express.Router();
 // post from Shopify checkout
 app.route('/payment')
   .post(function(req,res) {
-    // res.render('index', {request: turnToString(req)});
-    // console.log(req.body)
+    res.render('index', {request: showResponseValues(req,res,secret,"completed")});
+    console.log(req.body)
     var provided_signature = req.body.x_signature;
     var finalfields = createFields(req.body);
     var expected_signature = sign(removeSignature(finalfields),secret);
@@ -143,8 +162,8 @@ app.route('/payment')
     } else {
       console.log("Signature's do not match.");
     }
-    // process payment with status 'completed'
-    processPayment(req,res,secret,"completed");
+    // setTimeout(function() { processPayment(req,res,secret,"completed"); },10000);
+
   });
 
 // route with params (http://localhost:1337/payment/type/:name)
