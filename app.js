@@ -17,7 +17,7 @@ app.listen(4567);
 console.log('4567 is up and running.');
 
 // use the same secret as defined in your gateway settings under 'Password label'
-var secret = 'iU44RWxeik';
+var secret = 'iU44RWxeike';
 
 // helper functions (soon to be replaced using underscore.js)
 
@@ -113,7 +113,7 @@ function processPayment(req,res,secret,result) {
     "x_amount"            :req.body['x_amount'],
     "x_result"            :result, // completed, pending, failed
     "x_gateway_reference" :randomValueHex(5),
-    "x_timestamp"         :timeOfTransaction
+    "x_timestamp"         :timeOfTransaction,
   };
   payload.x_signature = sign(payload,secret);
   console.log(payload)
@@ -123,20 +123,21 @@ function processPayment(req,res,secret,result) {
   unirest.post(callback_url)
   .headers({'Accept': 'application/json'})
   .send(payload)
-  .end(function(res) {
+  .end((res) => {
+    console.log(res.body);
     console.log(res.code);
   })
   // how the heck do I call the following code in the end() method body above - scoping issue?
   var queryString = '?' + querystring.stringify(payload);
-  // res.redirect(redirect_url + queryString);
+  res.redirect(redirect_url + queryString);
 };
 
 // routing
-app.post('/', function(req,res) {
+app.post('/',(req,res) => {
   res.render('index', { key:secret});
 });
 
-app.get('/about', function(req,res) {
+app.get('/about',(req,res) => {
   res.render('about')
 });
 
@@ -150,9 +151,10 @@ var paymentRouter = express.Router();
 
 // post from Shopify checkout
 app.route('/payment')
-  .post(function(req,res) {
-    res.render('index', {request: showResponseValues(req,res,secret,"completed")});
-    console.log(req.body)
+  .post((req,res) => {
+    // res.render('index', {request: showResponseValues(req,res,secret,"completed")});
+    console.log(req.body);
+    console.log(req.headers);
     var provided_signature = req.body.x_signature;
     var finalfields = createFields(req.body);
     var expected_signature = sign(removeSignature(finalfields),secret);
@@ -162,12 +164,13 @@ app.route('/payment')
     } else {
       console.log("Signature's do not match.");
     }
+    processPayment(req,res,secret,"pending");
     // setTimeout(function() { processPayment(req,res,secret,"completed"); },10000);
 
   });
 
 // route with params (http://localhost:1337/payment/type/:name)
-paymentRouter.get('/type/:action', function(req,res) {
+paymentRouter.get('/type/:action', (req,res) => {
   res.send('hello ' + req.params.action);
 });
 

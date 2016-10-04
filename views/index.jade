@@ -22,17 +22,16 @@ block body
         .inner.cover
           h1.cover-heading Hosted Payments SDK Simulator
           p.lead This tool will allow you to simulate the redirects and callbacks needed to build an integration using the Hosted Payment SDK.
-          p.lead
-          a(href="#", class="btn btn-lg btn-default") Complete Payment
+
 
       .container
-        h2 Response Values
-        p Click here to learn more about Hosted Payments SDK response values.
+        h3 Response Values
         form(role='form')
           .form-group
             each val, index in request
               label(for='index') #{index}
               input#index.form-control(type='text',placeholder=val)
+        a(href="#", class="btn btn-lg btn-default") Redirect with Callback Complete
         .mastfoot
           .inner
             // p Simulator built by <a href="http://getbootstrap.com">Shopify</a>
