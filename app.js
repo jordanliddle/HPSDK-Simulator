@@ -128,8 +128,8 @@ function processPayment(req,res,secret,result) {
     console.log(res.code);
   })
   // how the heck do I call the following code in the end() method body above - scoping issue?
-  var queryString = '?' + querystring.stringify(payload);
-  res.redirect(redirect_url + queryString);
+  // var queryString = '?' + querystring.stringify(payload);
+  // res.redirect(redirect_url + queryString);
 };
 
 // routing
@@ -165,7 +165,7 @@ app.route('/payment')
       console.log("Signature's do not match.");
     }
     processPayment(req,res,secret,"pending");
-    // setTimeout(function() { processPayment(req,res,secret,"completed"); },10000);
+    setTimeout(function() { processPayment(req,res,secret,"failed"); },10000);
 
   });
 
